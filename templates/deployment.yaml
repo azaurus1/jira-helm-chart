@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "jira.fullname" . }}-software
+  labels:
+    {{- include "jira.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "jira.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "jira.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+      - name: {{ include "jira.fullname" . }}-software
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        ports:
+        - containerPort: 8080
+        env:
+        - name: JVM_MINIMUM_MEMORY
+          value: "{{ .Values.env.jvmMinimumMemory }}"
+        - name: JVM_MAXIMUM_MEMORY
+          value: "{{ .Values.env.jvmMaximumMemory }}"
+        volumeMounts:
+        - name: {{ include "jira.fullname" . }}-data
+          mountPath: /var/atlassian/application-data/jira
+        resources:
+          {{- toYaml .Values.resources | nindent 12 }}
+      - name: ts-sidecar
+        imagePullPolicy: Always
+        image: "ghcr.io/tailscale/tailscale:latest"
+        env:
+          # Store the state in a k8s secret
+        - name: TS_KUBE_SECRET
+          value: {{ .Values.tailscale.tsKubeSecret }}
+        - name: TS_USERSPACE
+          value: "false"
+        - name: TS_AUTHKEY
+          valueFrom:
+            secretKeyRef:
+              name: tailscale-auth
+              key: TS_AUTHKEY
+              optional: true
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+      volumes:
+      - name: {{ include "jira.fullname" . }}-data
+        persistentVolumeClaim:
+          claimName: {{ include "jira.fullname" . }}-data-pvc
