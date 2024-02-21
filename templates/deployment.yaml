@@ -14,6 +14,7 @@ spec:
       labels:
         {{- include "jira.selectorLabels" . | nindent 8 }}
     spec:
+      serviceAccountName: {{ include "jira.fullname" . }}-tailscale-service-account
       containers:
       - name: {{ include "jira.fullname" . }}-software
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"

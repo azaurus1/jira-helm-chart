@@ -1,0 +1,11 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: read-secret
+subjects:
+- kind: ServiceAccount
+  name: {{ include "jira.fullname" . }}-tailscale-service-account
+roleRef:
+  kind: Role
+  name: {{ include "jira.fullname" . }}-tailscale-secret-reader
+  apiGroup: rbac.authorization.k8s.io
